@@ -25,4 +25,3 @@ class ActionInfo(BaseAction):
 		status = self._rc4dev.getstatus()
 		status.dump()
 		#print(status)
-

@@ -20,6 +20,7 @@
 
 import fractions
 import enum
+import datetime
 from BaseCommand import BaseCommand, BaseResponse
 
 def int16(value):
@@ -177,10 +178,11 @@ class CommandGetParameters(BaseCommand):
 			return fractions.Fraction(self._decode_sint8(0x94), 2)
 
 		def dump(self):
+			time_diff = (self.currentdatetime - datetime.datetime.utcnow()).total_seconds()
 			elements = [ ]
 			elements.append("State           : %s" % (self.state))
 			elements.append("Station ID      : %d" % (self.stationid))
-			elements.append("Current datetime: %s" % (self.currentdatetime))
+			elements.append("Current datetime: %s (%.0f seconds diff to UTC)" % (self.currentdatetime, time_diff))
 			elements.append("Last access     : %s" % (self.lastaccessdatetime))
 			elements.append("Start datetime  : %s" % (self.startdatetime))
 			elements.append("User info       : %s" % (self.userinfo))
