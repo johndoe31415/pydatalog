@@ -134,6 +134,10 @@ class CommandGetParameters(BaseCommand):
 			return self._decode_datetime(0x14)
 
 		@property
+		def enddatetime(self):
+			return self.startdatetime + datetime.timedelta(0, self.datapts * self.intervalsecs)
+
+		@property
 		def currentdatetime(self):
 			return self._decode_datetime(0x1f)
 
@@ -185,6 +189,7 @@ class CommandGetParameters(BaseCommand):
 			elements.append("Current datetime: %s (%.0f seconds diff to UTC)" % (self.currentdatetime, time_diff))
 			elements.append("Last access     : %s" % (self.lastaccessdatetime))
 			elements.append("Start datetime  : %s" % (self.startdatetime))
+			elements.append("End datetime    : %s" % (self.enddatetime))
 			elements.append("User info       : %s" % (self.userinfo))
 			elements.append("Device ID       : %s" % (self.deviceid))
 			elements.append("Data points     : %d" % (self.datapts))

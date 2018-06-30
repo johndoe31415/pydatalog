@@ -24,4 +24,9 @@ class ActionDownload(BaseAction):
 	def run(self):
 		data = self._rc4dev.readout()
 		with open(self._args.output, "w") as f:
-			data.write_txt(f)
+			if self._args.format == "txt":
+				data.write_txt(f)
+			elif self._args.format == "json":
+				data.write_json(f)
+			else:
+				raise Exception(NotImplemented)

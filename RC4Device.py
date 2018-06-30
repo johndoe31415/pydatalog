@@ -22,6 +22,7 @@ import time
 import datetime
 import calendar
 import logging
+import json
 
 from Commands import CommandGetParameters, CommandDownloadDataPage, CommandStopAcquisition, CommandGetDataInit
 from Commands import CommandNop, CommandSetID, CommandSetUserInfo, CommandSetDatetime, CommandSetParameters
@@ -39,7 +40,8 @@ class RC4Readout(object):
 		print("# Data points        : %d" % (len(self._data)), file = f)
 		print("# Interval time      : %d secs" % (self._params.intervalsecs), file = f)
 		print("# Start of data      : %s" % (self._params.startdatetime.strftime("%Y-%m-%d %H:%M:%S")), file = f)
-		print("# End of data        : %s" % (self._params.currentdatetime.strftime("%Y-%m-%d %H:%M:%S")), file = f)
+		print("# End of data        : %s" % (self._params.enddatetime.strftime("%Y-%m-%d %H:%M:%S")), file = f)
+		print("# Current date       : %s" % (self._params.currentdatetime.strftime("%Y-%m-%d %H:%M:%S")), file = f)
 		print("# Unit of acquisition: °C", file = f)
 		print(file = f)
 		delta = datetime.timedelta(0, self._params.intervalsecs)
@@ -47,6 +49,32 @@ class RC4Readout(object):
 			timestamp = self._params.startdatetime + (index * delta)
 			timet = calendar.timegm(timestamp.utctimetuple())
 			print("%d	%s	%.1f" % (timet, timestamp.strftime("%Y-%m-%d %H:%M:%S"), datapoint), file = f)
+
+	@staticmethod
+	def _ts_json(ts):
+		return {
+			"timet":		calendar.timegm(ts.timetuple()),
+			"iso":			ts.isoformat(timespec = "seconds"),
+		}
+
+	def write_json(self, f):
+		json_data = {
+			"readout_ts_utc":	self._ts_json(self._readoutdate),
+			"device": {
+				"id":			self._params.deviceid,
+				"user_info":	self._params.userinfo,
+			},
+			"data": {
+				"count":		len(self._data),
+				"unit":			"C",
+				"interval":		self._params.intervalsecs,
+				"start":		self._ts_json(self._params.startdatetime),
+				"end":			self._ts_json(self._params.enddatetime),
+				"now":			self._ts_json(self._params.currentdatetime),
+				"points":		[ float(value) for value in self._data ],
+			},
+		}
+		print(json.dumps(json_data, sort_keys = True, indent = 4), file = f)
 
 class RC4Device(object):
 	_log = logging.getLogger("pydatalog.RC4Device")
