@@ -180,7 +180,7 @@ class CommandGetParameters(BaseCommand):
 		def dump(self):
 			time_diff = (self.currentdatetime - datetime.datetime.utcnow()).total_seconds()
 			elements = [ ]
-			elements.append("State           : %s" % (self.state))
+			elements.append("State           : %s" % (self.state.name))
 			elements.append("Station ID      : %d" % (self.stationid))
 			elements.append("Current datetime: %s (%.0f seconds diff to UTC)" % (self.currentdatetime, time_diff))
 			elements.append("Last access     : %s" % (self.lastaccessdatetime))
@@ -195,7 +195,6 @@ class CommandGetParameters(BaseCommand):
 			elements.append("Delay time      : %.1f hrs" % (self.delaytime))
 			elements = "\n".join(elements)
 			print(elements)
-
 
 class CommandSetDatetime(BaseCommand):
 	def __init__(self, timestamp):

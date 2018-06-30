@@ -26,11 +26,10 @@ class ActionSetup(BaseAction):
 	def run(self):
 		self._rc4dev.setup(self._args.interval)
 
-		if self._args.verbose:
-			now = datetime.datetime.now()
-			delta = datetime.timedelta(0, self._args.interval * 16000)
-			endtime = now + delta
-			print("Interval set to %d seconds" % (self._args.interval))
-			print("End of acquisition: %s" % (endtime.strftime("%Y-%m-%d %H:%M:%S")))
-			print("Acquisition duration: %s" % (str(delta)))
+		self._log.debug("Logging interval set to %d seconds" % (self._args.interval))
 
+		now = datetime.datetime.now()
+		delta = datetime.timedelta(0, self._args.interval * 16000)
+		endtime = now + delta
+		self._log.info("Acquisition duration: %s" % (str(delta)))
+		self._log.info("End of acquisition: %s (local)" % (endtime.strftime("%Y-%m-%d %H:%M:%S")))

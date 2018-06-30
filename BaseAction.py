@@ -38,6 +38,7 @@ class BaseAction(object):
 		facility = logging.getLogger("pydatalog")
 		facility.addHandler(handler)
 		facility.setLevel(lvl)
+		self._log = logging.getLogger("pydatalog." + self.__class__.__name__)
 
 		self._conn = RC4Connection(self._args.device, data_debug_callback = self._data_debug_callback)
 		self._rc4dev = RC4Device(self._conn)

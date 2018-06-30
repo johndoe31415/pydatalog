@@ -28,12 +28,12 @@ from Commands import CommandNop, CommandSetID, CommandSetUserInfo, CommandSetDat
 
 class RC4Readout(object):
 	def __init__(self, params, data):
-		self._readoutdate = datetime.datetime.now()
+		self._readoutdate = datetime.datetime.utcnow()
 		self._params = params
 		self._data = data
 
 	def write_txt(self, f):
-		print("# Readout of RC-4 device on %s" % (self._readoutdate.strftime("%Y-%m-%d %H:%M:%S")), file = f)
+		print("# Readout of RC-4 device on %s UTC" % (self._readoutdate.strftime("%Y-%m-%d %H:%M:%S")), file = f)
 		print("# Device ID          : %s" % (self._params.deviceid), file = f)
 		print("# User Info          : %s" % (self._params.userinfo), file = f)
 		print("# Data points        : %d" % (len(self._data)), file = f)
