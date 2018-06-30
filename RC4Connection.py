@@ -20,14 +20,13 @@
 
 import serial
 
-from HexDump import HexDump
-
 class RC4Connection(object):
 	_ADDRESS_ALL = 0xcc
 	_ADDRESS_STATION_ID = 0x33
 
-	def __init__(self, devpath):
+	def __init__(self, devpath, data_debug_callback = None):
 		self._conn = serial.Serial("/dev/ttyUSB0", baudrate = 115200, timeout = 0.25)
+		self._data_debug_callback = data_debug_callback
 
 	def read(self, length, short_read_okay = False):
 		read_data = bytearray()
@@ -54,6 +53,10 @@ class RC4Connection(object):
 		cksum = sum(data[:-1]) & 0xff
 		return data[-1] == cksum
 
+	def _data_debug(self, identifier, data):
+		if self._data_debug_callback is not None:
+			self._data_debug_callback(identifier, data)
+
 	def send(self, command, stationid = None, short_read_okay = False):
 		rspclass = command.Response
 		readlength = rspclass.readlength()
@@ -64,9 +67,7 @@ class RC4Connection(object):
 		else:
 			txdata = bytes([ self._ADDRESS_STATION_ID, stationid, command.commandid() ]) + txdata
 		txdata = self._enframe(txdata)
-		print("-> TX")
-		HexDump().dump(txdata)
-		print()
+		self._data_debug("-> TX", txdata)
 		self._conn.write(txdata)
 
 		rxdata = self.read(readlength, short_read_okay = short_read_okay)
@@ -79,9 +80,7 @@ class RC4Connection(object):
 		if not response.lengthok():
 			raise Exception("Short read, read %d bytes but received %d bytes." % (readlength, len(rxdata)))
 
-		print("<- RX")
-		HexDump().dump(rxdata)
-		print()
+		self._data_debug("<- RX", rxdata)
 		return response
 
 	def bytes2hex(data):
