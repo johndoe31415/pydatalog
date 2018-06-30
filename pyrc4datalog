@@ -56,7 +56,7 @@ mc.register("setup", "Delete all previously stored data and setup new acquisitio
 
 def genparser(parser):
 	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
-	parser.add_argument("-l", "--localtime", action = "store_true", help = "Synchronize local time instead of UTC time. Default is UTC.")
+	parser.add_argument("--localtime", action = "store_true", help = "Synchronize local time instead of UTC time. Default is UTC. Keeping the logger's time in local time is discouraged and might cause issues later on.")
 	parser.add_argument("-v", "--verbose", action = "count", default = 0, help = "Increase verbosity.")
 mc.register("synctime", "Synchronize the local system time with the connected RC-4 device", genparser, action = ActionSyncTime)
 
