@@ -5,7 +5,9 @@ time of this writing). They appears to always be the same (white-label) device,
 containing a CP2102 USB to UART Bridge Controller and therefore getting detected
 by a Linux system as /dev/ttyUSBx.
 
-With pydatalog, you can configure and read out the data from these devices.
+With pydatalog, you can configure and read out the data from these devices. The
+protocol has been reverse engineered from the horrific, horrific original
+software, so support may not be complete for all features.
 
 # Usage
 First, attach the device to your PC and identify which USB tty it was detected
