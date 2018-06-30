@@ -18,10 +18,16 @@
 #
 #	Johannes Bauer <JohannesBauer@gmx.de>
 
+import os
+import sys
 from BaseAction import BaseAction
 
 class ActionDownload(BaseAction):
 	def run(self):
+		if os.path.exists(self._args.output) and not (self._args.force):
+			self._log.error("Refusing to overwrite output file %s", self._args.output)
+			sys.exit(1)
+
 		data = self._rc4dev.readout()
 		with open(self._args.output, "w") as f:
 			if self._args.format == "txt":
