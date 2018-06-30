@@ -47,7 +47,7 @@ Then, let the device log for a while. After you're done, you can readout all
 data from it:
 
 ```
-$ ./pyrc4datalog download -o my_room.txt
+$ ./pyrc4datalog download --format txt -o my_room.txt
 $ head -n 14 my_room.txt
 # Readout of RC-4 device on 2018-06-30 13:00:10 UTC
 # Device ID          : 1
