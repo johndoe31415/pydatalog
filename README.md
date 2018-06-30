@@ -65,7 +65,13 @@ $ head -n 14 my_room.txt
 1530363492	2018-06-30 12:58:12	30.2
 ```
 
-You can then continue to use that data as you see fit.
+You can then continue to use that data as you see fit. Note that if you want to
+plot data, you need to have it present in JSON format so "dataplot" can read
+it. Use it like this:
+
+```
+$ dataplot --format png --output rooms.png room1.json room2.json
+```
 
 ## Bug reporting
 Be sure to include a verbose dump of all the exchanged data when you submit a
