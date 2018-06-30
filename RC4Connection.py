@@ -25,7 +25,7 @@ class RC4Connection(object):
 	_ADDRESS_STATION_ID = 0x33
 
 	def __init__(self, devpath, data_debug_callback = None):
-		self._conn = serial.Serial("/dev/ttyUSB0", baudrate = 115200, timeout = 0.25)
+		self._conn = serial.Serial(devpath, baudrate = 115200, timeout = 0.25)
 		self._data_debug_callback = data_debug_callback
 
 	def read(self, length, short_read_okay = False):
