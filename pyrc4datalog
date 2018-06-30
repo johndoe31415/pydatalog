@@ -1,0 +1,69 @@
+#!/usr/bin/python3
+#	pydatalog - Tool to read out temperature data loggers
+#	Copyright (C) 2015-2018 Johannes Bauer
+#
+#	This file is part of pydatalog.
+#
+#	pydatalog is free software; you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation; this program is ONLY licensed under
+#	version 3 of the License, later versions are explicitly excluded.
+#
+#	pydatalog is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#	Johannes Bauer <JohannesBauer@gmx.de>
+
+import sys
+from MultiCommand import MultiCommand
+from ActionInfo import ActionInfo
+from ActionStop import ActionStop
+from ActionDownload import ActionDownload
+from ActionSetup import ActionSetup
+from ActionSyncTime import ActionSyncTime
+from ActionSetInfo import ActionSetInfo
+
+mc = MultiCommand()
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("info", "Show some information about the attached logger", genparser, action = ActionInfo)
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("stop", "Stop the current logging", genparser, action = ActionStop)
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("-o", "--output", metavar = "file", type = str, default = "readout_data.txt", help = "Text file to which output is written. Default is %(default)s.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("download", "Download all logging data from connected device", genparser, action = ActionDownload)
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("-i", "--interval", metavar = "secs", type = int, default = 60, help = "Define the acquisition interval in seconds. Default is %(default)s.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("setup", "Delete all previously stored data and setup new acquisition", genparser, action = ActionSetup)
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("-l", "--localtime", action = "store_true", help = "Synchronize local time instead of UTC time. Default is UTC.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("synctime", "Synchronize the local system time with the connected RC-4 device", genparser, action = ActionSyncTime)
+
+def genparser(parser):
+	parser.add_argument("-d", "--device", metavar = "path", type = str, default = "/dev/ttyUSB0", help = "Specifies the device to which the RC-4 logger is connected to. Default is %(default)s.")
+	parser.add_argument("-u", "--user", metavar = "info", type = str, help = "Configures the devices user information string.")
+	parser.add_argument("-i", "--id", metavar = "info", type = str, help = "Configures the devices ID information string.")
+	parser.add_argument("--verbose", action = "store_true", help = "Increase verbosity during the importing process.")
+mc.register("setinfo", "Configure device user and/or ID information", genparser, action = ActionSetInfo)
+
+mc.run(sys.argv[1:])
+
