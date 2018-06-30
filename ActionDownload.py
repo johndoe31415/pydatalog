@@ -23,9 +23,5 @@ from BaseAction import BaseAction
 class ActionDownload(BaseAction):
 	def run(self):
 		data = self._rc4dev.readout()
-		f = open(self._args.output, "w")
-		data.write_txt(f)
-		f.close()
-
-
-
+		with open(self._args.output, "w") as f:
+			data.write_txt(f)
