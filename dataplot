@@ -138,7 +138,7 @@ class TXTWriter(OutputWriter):
 
 class GPLWriter(OutputWriter):
 	def write_file(self, f):
-		def _color(index):
+		def _get_color(index):
 			colors = {
 				0: "2980b9",
 				1: "c0392b",
@@ -149,15 +149,29 @@ class GPLWriter(OutputWriter):
 			}
 			return colors[index % len(colors)]
 
-		print("set terminal pngcairo size 1280,960", file = f)
+		def _plot_cmd(index, content):
+			cmd = [ "'-' using 1:2" ]
+			if self._args.smooth == "none":
+				cmd += [ "with steps" ]
+			elif self._args.smooth == "linear":
+				cmd += [ "with lines" ]
+			else:
+				cmd += [ "with lines smooth %s" % (self._args.smooth) ]
+			cmd += [ "title \"%s\"" % (content.user_info.replace("\"", "\\\"")) ]
+			cmd += [ "lc \"#%s\"" % (_get_color(index)) ]
+			return " ".join(cmd)
+
+		print("set terminal pngcairo size %d,%d" % (self._args.size[0], self._args.size[1]), file = f)
 		print("set xdata time", file = f)
 		print("set timefmt \"%Y-%m-%dT%H:%M:%S\"", file = f)
+		print("set format x \"%m-%d\\n%H:%M\"", file = f)
 		print("set xlabel \"Timestamp\"", file = f)
 		print("set ylabel \"Temperature (°%s)\"" % (self._args.unit), file = f)
 		print("set ytics nomirror", file = f)
 		print("set grid", file = f)
+		print("set samples %d" % (self._args.samples), file = f)
 
-		plotcmd = [ "'-' using 1:2 with lines title \"%s\" lc \"#%s\" lw 2" % (content.user_info, _color(idx)) for (idx, content) in enumerate(self._files) ]
+		plotcmd = [ _plot_cmd(index,content) for (index, content) in enumerate(self._files) ]
 		print("plot %s" % (", ".join(plotcmd)), file = f)
 		print(file = f)
 		for content in self._files:
@@ -182,9 +196,16 @@ class PNGWriter(OutputWriter):
 		with open(output_filename, "wb") as f:
 			f.write(png)
 
+def size_type(text):
+	(w, h) = [ int(value) for value in text.split("x") ]
+	return (w, h)
+
 parser = FriendlyArgumentParser()
 parser.add_argument("--unit", choices = [ "C", "F" ], default = "C", help = "Unit to output to. Can be either Celsius or Fahrenheit, i.e., any of %(choices)s -- defaults to %(default)s.")
 parser.add_argument("--time-offset", metavar = "secs", type = int, default = 0, help = "Add a constant time offset to all files. This can be used to correct a data logger that was accidently logging in local time instead of UTC (logging in UTC is assumed to be the default behavior).")
+parser.add_argument("-s", "--size", type = size_type, metavar = "w x h", default = "1280x720", help = "Geometry when rendering GnuPlot image, given as width times height. Defaults to %(default)s.")
+parser.add_argument("--smooth", choices = [ "none", "linear", "cspline", "bezier" ], default = "none", help = "When plotting, specifies which smoothing method is used. Can be any of %(choices)s, defaults to %(default)s.")
+parser.add_argument("--samples", metavar = "count", type = int, default = 1000, help = "When smoothing a plot, defines how many points are going to be sampled. More makes the graph finer. Defaults to %(default)s.")
 parser.add_argument("-t", "--timezone", metavar = "tzspec", default = "local", help = "Convert timezone to this value. Can be 'UTC', 'local' or a timezone specifier like 'Europe/Berlin'. Defaults to '%(default)s'.")
 parser.add_argument("-f", "--format", choices = [ "png", "gpl", "txt" ], default = "png", help = "Output format to write. Can be any of %(default)s, defaults to %(default)s.")
 parser.add_argument("-o", "--output", metavar = "filename", default = "output.png", help = "Output file to write. Defaults to %(default)s.")
