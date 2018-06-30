@@ -73,7 +73,8 @@ bug report, i.e., have "-vvv" as a command line option. This will cause a
 hexdump of everything that is sent to/received from the RC-4.
 
 ## Dependencies
-pydatalog requires Python3 and pyserial.
+pydatalog requires Python3 and pyserial. To plot data using dataplot, you will
+need Python3, pytz, tzlocal and (if requested) GnuPlot.
 
 ## License
 GNU GPL-3.

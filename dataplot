@@ -1,0 +1,201 @@
+#!/usr/bin/python3
+#	pydatalog - Tool to read out temperature data loggers
+#	Copyright (C) 2015-2018 Johannes Bauer
+#
+#	This file is part of pydatalog.
+#
+#	pydatalog is free software; you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation; this program is ONLY licensed under
+#	version 3 of the License, later versions are explicitly excluded.
+#
+#	pydatalog is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
+#
+#	You should have received a copy of the GNU General Public License
+#	along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+#	Johannes Bauer <JohannesBauer@gmx.de>
+
+import sys
+import json
+import pytz
+import tzlocal
+import datetime
+import subprocess
+import io
+from FriendlyArgumentParser import FriendlyArgumentParser
+
+class DataFile(object):
+	def __init__(self, filename):
+		self._filename = filename
+		with open(filename) as f:
+			self._data = json.load(f)
+
+	@property
+	def filename(self):
+		return self._filename
+
+	@property
+	def user_info(self):
+		return self._data["device"]["user_info"]
+
+	@property
+	def start_of_acquisition(self):
+		return self._data["data"]["start"]["timet"]
+
+	@property
+	def acquisition_interval(self):
+		return self._data["data"]["interval"]
+
+	@property
+	def end_of_acquisition(self):
+		return self.start_of_acquisition + (self.acquisition_interval * len(self._data["data"]["points"]))
+
+	def __iter__(self):
+		t = self.start_of_acquisition
+		step = self.acquisition_interval
+		for value in self._data["data"]["points"]:
+			yield (t, value)
+			t += step
+
+class TimeCorrector(object):
+	def __init__(self, args):
+		self._args = args
+		self._utc = pytz.timezone("UTC")
+		if self._args.timezone == "local":
+			self._convert = tzlocal.get_localzone()
+		else:
+			self._convert = pytz.timezone(self._args.timezone)
+
+	def __call__(self, timet):
+		t = timet + self._args.time_offset
+		dt = datetime.datetime.utcfromtimestamp(t)
+		dt_utc = self._utc.localize(dt)
+		dt_local = dt_utc.astimezone(self._convert)
+		return dt_local
+
+class OutputWriter(object):
+	def __init__(self, args, files):
+		self._args = args
+		self._files = files
+		self._tc = TimeCorrector(args)
+		if self._args.unit == "C":
+			self._unit = lambda degc: degc
+		else:
+			self._unit = lambda degc: (degc * 1.8) + 32
+
+	def write(self, output_filename):
+		raise Exception(NotImplemented)
+
+class TXTWriter(OutputWriter):
+	@staticmethod
+	def _zip_points(data):
+		def _next_or_none(iterator):
+			try:
+				return next(iterator)
+			except StopIteration:
+				return None
+
+		iterators = [ iter(x) for x in data ]
+		head = [ _next_or_none(iterator) for iterator in iterators ]
+
+		while True:
+			minidx = None
+			for (eid, element) in enumerate(head):
+				if element is not None:
+					if (minidx is None) or (element[0] < head[minidx][0]):
+						minidx = eid
+			if minidx is None:
+				break
+			(ts, value) = head[minidx]
+			value_array = ([ None ] * minidx) + [ value ] + ([ None ] * (len(iterators) - 1 - minidx))
+			yield (ts, value_array)
+
+			head[minidx] = _next_or_none(iterators[minidx])
+
+	def _write(self, f):
+		print("# %d file(s) given as input: %s" % (len(self._args.filename), ", ".join(self._args.filename)), file = f)
+		for data in self._files:
+			print("# Information for %s:" % (data.filename), file = f)
+			print("# Start of acquisition: %s" % (self._tc(data.start_of_acquisition)), file = f)
+			print("# End of acquisition  : %s" % (self._tc(data.end_of_acquisition)), file = f)
+			print("# Acquisition interval: %d seconds" % (data.acquisition_interval), file = f)
+			print(file = f)
+
+		for (ts, points) in self._zip_points(self._files):
+			ts_str = self._tc(ts)
+			points_str = [ "%.1f" % (self._unit(value)) if (value is not None) else "-" for value in points ]
+			print("%s	%s" % (ts_str.strftime("%Y-%m-%d %H:%M:%S"), "\t".join(points_str)), file = f)
+		print(file = f)
+		print("# vim: set ts=8:", file = f)
+
+	def write(self, output_filename):
+		with open(output_filename, "w") as f:
+			self._write(f)
+
+class GPLWriter(OutputWriter):
+	def write_file(self, f):
+		def _color(index):
+			colors = {
+				0: "2980b9",
+				1: "c0392b",
+				2: "2ecc71",
+				3: "8e44ad",
+				4: "f39c12",
+				5: "1abc9c",
+			}
+			return colors[index % len(colors)]
+
+		print("set terminal pngcairo size 1280,960", file = f)
+		print("set xdata time", file = f)
+		print("set timefmt \"%Y-%m-%dT%H:%M:%S\"", file = f)
+		print("set xlabel \"Timestamp\"", file = f)
+		print("set ylabel \"Temperature (°%s)\"" % (self._args.unit), file = f)
+		print("set ytics nomirror", file = f)
+		print("set grid", file = f)
+
+		plotcmd = [ "'-' using 1:2 with lines title \"%s\" lc \"#%s\" lw 2" % (content.user_info, _color(idx)) for (idx, content) in enumerate(self._files) ]
+		print("plot %s" % (", ".join(plotcmd)), file = f)
+		print(file = f)
+		for content in self._files:
+			for (ts, point) in content:
+				ts = self._tc(ts).strftime("%Y-%m-%dT%H:%M:%S")
+				point = self._unit(point)
+				print("%s	%.1f" % (ts, point), file = f)
+			print("end", file = f)
+			print(file = f)
+
+	def write(self, output_filename):
+		with open(output_filename, "w") as f:
+			self.write_file(f)
+
+class PNGWriter(OutputWriter):
+	def write(self, output_filename):
+		gpl_writer = GPLWriter(self._args, self._files)
+		gpl_file = io.StringIO()
+		gpl_writer.write_file(gpl_file)
+		gpl = gpl_file.getvalue()
+		png = subprocess.check_output([ "gnuplot" ], input = gpl.encode())
+		with open(output_filename, "wb") as f:
+			f.write(png)
+
+parser = FriendlyArgumentParser()
+parser.add_argument("--unit", choices = [ "C", "F" ], default = "C", help = "Unit to output to. Can be either Celsius or Fahrenheit, i.e., any of %(choices)s -- defaults to %(default)s.")
+parser.add_argument("--time-offset", metavar = "secs", type = int, default = 0, help = "Add a constant time offset to all files. This can be used to correct a data logger that was accidently logging in local time instead of UTC (logging in UTC is assumed to be the default behavior).")
+parser.add_argument("-t", "--timezone", metavar = "tzspec", default = "local", help = "Convert timezone to this value. Can be 'UTC', 'local' or a timezone specifier like 'Europe/Berlin'. Defaults to '%(default)s'.")
+parser.add_argument("-f", "--format", choices = [ "png", "gpl", "txt" ], default = "png", help = "Output format to write. Can be any of %(default)s, defaults to %(default)s.")
+parser.add_argument("-o", "--output", metavar = "filename", default = "output.png", help = "Output file to write. Defaults to %(default)s.")
+parser.add_argument("filename", metavar = "json", type = str, nargs = "+", help = "Plot source files to include.")
+args = parser.parse_args(sys.argv[1:])
+
+writer_class = {
+	"txt":	TXTWriter,
+	"gpl":	GPLWriter,
+	"png":	PNGWriter,
+}[args.format]
+files = [ DataFile(filename) for filename in args.filename ]
+writer = writer_class(args, files)
+writer.write(args.output)
