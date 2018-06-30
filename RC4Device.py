@@ -21,6 +21,7 @@
 import time
 import datetime
 import calendar
+import logging
 
 from Commands import CommandGetParameters, CommandDownloadDataPage, CommandStopAcquisition, CommandGetDataInit
 from Commands import CommandNop, CommandSetID, CommandSetUserInfo, CommandSetDatetime, CommandSetParameters
@@ -48,6 +49,7 @@ class RC4Readout(object):
 			print("%d	%s	%.1f" % (timet, timestamp.strftime("%Y-%m-%d %H:%M:%S"), datapoint), file = f)
 
 class RC4Device(object):
+	_log = logging.getLogger("pydatalog.RC4Device")
 	def __init__(self, conn):
 		self._conn = conn
 
@@ -58,20 +60,19 @@ class RC4Device(object):
 
 	def readout(self):
 		params = self.getstatus()
-		print(params.datapts)
 		pages = (params.datapts + 99) // 100
-		print(pages)
 
 		self._conn.send(CommandGetDataInit(), stationid = params.stationid)
 
 		data = [ ]
-		print("PAGES:", pages)
+		self._log.info("%d data points on device in %d pages", params.datapts, pages)
 		for pageno in range(pages):
-			print("Reading page", pageno)
+			self._log.debug("Reading page %d (%.0f%%)", pageno, pageno / pages * 100)
 			rsp = self._conn.send(CommandDownloadDataPage(pageno), stationid = params.stationid, short_read_okay = (pageno == pages - 1))
 			if len(rsp.data) == 0:
 				break
 			data += rsp.data
+		self._log.debug("All pages read.")
 
 		data = data[:params.datapts]
 		return RC4Readout(params, data)
