@@ -1,9 +1,10 @@
 # pydatalog
-This is a tool to read out the USB temperature data logger "RC-4". It's sold
-under many brands ("Elitech" and "Floureaon" seem to be the most common at the
-time of this writing). They appears to always be the same (white-label) device,
-containing a CP2102 USB to UART Bridge Controller and therefore getting detected
-by a Linux system as /dev/ttyUSBx.
+This is a tool to read out the USB temperature data logger "RC-4" as well as
+the "RC-5" model. It's sold under many brands ("Elitech" and "Floureaon" seem
+to be the most common at the time of this writing). They appears to always be
+the same (white-label) device, containing a CP2102 USB to UART Bridge
+Controller (RC-4) or QinHeng Electronics HL-340 USB-Serial adapter (RC-5, Linux
+driver ch341) and therefore getting detected by a Linux system as /dev/ttyUSBx.
 
 ![RC-4 Data Logger](https://raw.githubusercontent.com/johndoe31415/pydatalog/master/docs/rc4.jpg)
 
@@ -16,7 +17,7 @@ First, attach the device to your PC and identify which USB tty it was detected
 as. Check that the device is recognized:
 
 ```
-$ ./pyrc4datalog info
+$ ./pydatalog info
 State           : READY
 Station ID      : 1
 Current datetime: 2018-06-30 12:55:07 (-0 seconds diff to UTC)
@@ -35,9 +36,9 @@ Delay time      : 0.0 hrs
 It's a good idea to sync the time to UTC first, then configure it as you see fit:
 
 ```
-$ ./pyrc4datalog synctime
-$ ./pyrc4datalog setinfo --user "Living Room"
-$ ./pyrc4datalog setup --interval 10 -vv
+$ ./pydatalog synctime
+$ ./pydatalog setinfo --user "Living Room"
+$ ./pydatalog setup --interval 10 -vv
 2018-06-30 14:57:03,734 - pydatalog.ActionSetup - DEBUG - Logging interval set to 10 seconds
 2018-06-30 14:57:03,734 - pydatalog.ActionSetup - INFO - Acquisition duration: 1 day, 20:26:40
 2018-06-30 14:57:03,734 - pydatalog.ActionSetup - INFO - End of acquisition: 2018-07-02 11:23:43 (local)
@@ -47,7 +48,7 @@ Then, let the device log for a while. After you're done, you can readout all
 data from it:
 
 ```
-$ ./pyrc4datalog download --format txt -o my_room.txt
+$ ./pydatalog download --format txt -o my_room.txt
 $ head -n 14 my_room.txt
 # Readout of RC-4 device on 2018-06-30 13:00:10 UTC
 # Device ID          : 1
