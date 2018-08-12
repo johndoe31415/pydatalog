@@ -135,7 +135,11 @@ class CommandGetParameters(BaseCommand):
 
 		@property
 		def enddatetime(self):
-			return self.startdatetime + datetime.timedelta(0, self.datapts * self.intervalsecs)
+			start = self.startdatetime
+			if start is None:
+				return None
+			else:
+				return start + datetime.timedelta(0, self.datapts * self.intervalsecs)
 
 		@property
 		def currentdatetime(self):
